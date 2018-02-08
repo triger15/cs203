@@ -5,48 +5,14 @@ import java.io.FileNotFoundException;
 class LabOneA {
 
   /**
-   * Event encapsulations information about the time an event is supposed to occur, and its type.
-   */
-  static class Event {
-    public double time; // The time this event will occur
-    public int eventType; // The type of event, indicates what should happen when an event occurs.
-  }
-
-  /**
    * We support two types of events for now, when a customer arrives, and when a customer leaves.
    */
   public static final int CUSTOMER_ARRIVE = 1;
   public static final int CUSTOMER_DONE = 2;
 
-
-  /**
-   * Simulator encapsulates all the information relevant to the current simulation.
-   */
-  static class Simulator {
-
-    // The first two members are constants, used to configure the simulator.
-    public static final int MAX_NUMBER_OF_EVENTS = 100; // Maximum number of events
-    public static final double SERVICE_TIME = 1.0; // Time spent serving a customer
-
-    // The next two members are used to store scheduled events
-    public Event[] events; // Array of events, order of events not guaranteed.
-    public int numOfEvents; // The number of events in the event array.
-
-    // The next three members are used to record the states of the simulation
-    public boolean customerBeingServed; // is a customer currently being served?
-    public boolean customerWaiting; // is a customer currently waiting?
-    public double timeStartedWaiting; // the time the current waiting customer started waiting
-
-    // The next three members are used to keep track of simulation statistics
-    public double totalWaitingTime; // total time everyone spent waiting
-    public int totalNumOfServedCustomer; // how many customer has waited
-    public int totalNumOfLostCustomer; // how many customer has been lost
-
-    // The next three members are used to identify customer
-    public int lastCustomerId; // starts from 0 and increases as customer arrives.
-    public int servedCustomerId; // id of the customer being served, if any
-    public int waitingCustomerId; // id of the customer currently waiting, if any
-  }
+  // The first two members are constants, used to configure the simulator.
+  public static final int MAX_NUMBER_OF_EVENTS = 100; // Maximum number of events
+  public static final double SERVICE_TIME = 1.0; // Time spent serving a customer
 
   /**
    * The main method for LabOneA.
@@ -54,7 +20,7 @@ class LabOneA {
    * in the simulator.  Then, run the simulator.
    */
   public static void main(String[] args) {
-    Simulator sim = createSimulator();
+    Simulator sim = new Simulator(MAX_NUMBER_OF_EVENTS, SERVICE_TIME);
     Scanner s = createScanner(args);
     if (s == null) {
       return;
@@ -78,8 +44,8 @@ class LabOneA {
 
     // Print stats as three numbers:
     // <avg waiting time> <number of served customer> <number of lost customer>
-    System.out.printf("%.3f %d %d\n", sim.totalWaitingTime / sim.totalNumOfServedCustomer,
-        sim.totalNumOfServedCustomer, sim.totalNumOfLostCustomer);
+    System.out.printf("%.3f %d %d\n", sim.totalWaitingTime / sim.totalNumOfServedCustomer, sim.totalNumOfServedCustomer,
+        sim.totalNumOfLostCustomer);
   }
 
   /**
@@ -122,18 +88,6 @@ class LabOneA {
     sim.servedCustomerId = -1;
     sim.waitingCustomerId = -1;
     return sim;
-  }
-
-  /**
-   * Create an event and initialize it.
-   *
-   * @return A new event of type `type` that happens `when`
-   */
-  static Event createEvent(double when, int type) {
-    Event e = new Event();
-    e.time = when;
-    e.eventType = type;
-    return e;
   }
 
   /**
@@ -200,37 +154,37 @@ class LabOneA {
    */
   static void simulateEvent(Simulator sim, Event e) {
     switch (e.eventType) {
-      case CUSTOMER_ARRIVE:
-        // A customer has arrived.  Increase the ID and assign it to this customer.
-        sim.lastCustomerId++;
-        System.out.printf("%6.3f %d arrives\n", e.time, sim.lastCustomerId);
+    case CUSTOMER_ARRIVE:
+      // A customer has arrived.  Increase the ID and assign it to this customer.
+      sim.lastCustomerId++;
+      System.out.printf("%6.3f %d arrives\n", e.time, sim.lastCustomerId);
 
-        // If there is no customer currently being served.  Serve this one.
-        int currentCustomer = sim.lastCustomerId;
-        if (!sim.customerBeingServed) {
-          serveCustomer(sim, e.time, currentCustomer);
-        } else if (!sim.customerWaiting) {
-          // If there is a customer currently being served, and noone is waiting, wait.
-          makeCustomerWait(sim, e.time, currentCustomer);
-        } else {
-          // If there is a customer currently being served, and someone is waiting, the
-          // customer just leaves and go elsewhere (maximum only one waiting customer).
-          customerLeaves(sim, e.time, currentCustomer);
-        }
-        break;
-      case CUSTOMER_DONE:
-        // A customer is done being served.
-        System.out.printf("%6.3f %d done\n", e.time, sim.servedCustomerId);
-        if (sim.customerWaiting) {
-          // Someone is waiting, serve this waiting someone.
-          serveWaitingCustomer(sim, e.time);
-        } else {
-          // Server idle
-          sim.customerBeingServed = false;
-        }
-        break;
-      default:
-        System.err.printf("Unknown event type %d\n", e.eventType);
+      // If there is no customer currently being served.  Serve this one.
+      int currentCustomer = sim.lastCustomerId;
+      if (!sim.customerBeingServed) {
+        serveCustomer(sim, e.time, currentCustomer);
+      } else if (!sim.customerWaiting) {
+        // If there is a customer currently being served, and noone is waiting, wait.
+        makeCustomerWait(sim, e.time, currentCustomer);
+      } else {
+        // If there is a customer currently being served, and someone is waiting, the
+        // customer just leaves and go elsewhere (maximum only one waiting customer).
+        customerLeaves(sim, e.time, currentCustomer);
+      }
+      break;
+    case CUSTOMER_DONE:
+      // A customer is done being served.
+      System.out.printf("%6.3f %d done\n", e.time, sim.servedCustomerId);
+      if (sim.customerWaiting) {
+        // Someone is waiting, serve this waiting someone.
+        serveWaitingCustomer(sim, e.time);
+      } else {
+        // Server idle
+        sim.customerBeingServed = false;
+      }
+      break;
+    default:
+      System.err.printf("Unknown event type %d\n", e.eventType);
     }
   }
 
