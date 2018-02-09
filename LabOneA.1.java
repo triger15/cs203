@@ -2,7 +2,7 @@ import java.util.Scanner;
 import java.io.FileReader;
 import java.io.FileNotFoundException;
 
-class LabOneA {
+class LabOneA1 {
 
   /**
    * Event encapsulations information about the time an event is supposed to occur, and its type.

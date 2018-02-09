@@ -3,13 +3,6 @@ import java.io.FileReader;
 import java.io.FileNotFoundException;
 
 class LabOneA {
-
-  /**
-   * We support two types of events for now, when a customer arrives, and when a customer leaves.
-   */
-  public static final int CUSTOMER_ARRIVE = 1;
-  public static final int CUSTOMER_DONE = 2;
-
   // The first two members are constants, used to configure the simulator.
   public static final int MAX_NUMBER_OF_EVENTS = 100; // Maximum number of events
   public static final double SERVICE_TIME = 1.0; // Time spent serving a customer
@@ -29,8 +22,8 @@ class LabOneA {
     // The input file consists of a sequence of arrival timestamp
     // (not necessary in order).
     while (s.hasNextDouble()) {
-      Event e = new Event(s.nextDouble(), CUSTOMER_ARRIVE);
-      boolean ok = scheduleEventInSimulator(e, sim);
+      Event e = new Event(s.nextDouble(), Simulator.CUSTOMER_ARRIVE);
+      boolean ok = sim.scheduleEventInSimulator(e);
       if (!ok) {
         System.err.printf("warning: too many events.  Skipping the rest.");
         s.close();
@@ -40,7 +33,7 @@ class LabOneA {
     s.close();
 
     // Then run the simulator
-    runSimulator(sim);
+    sim.runSimulator();
 
     // Print stats as three numbers:
     // <avg waiting time> <number of served customer> <number of lost customer>
@@ -73,163 +66,4 @@ class LabOneA {
     }
   }
 
-  /**
-   * Schedule the event with the simulator.  The simulator maintains
-   * an array of event (in arbitrary order) and this method simply
-   * appends the given event to the end of the array.
-   *
-   * @return true if the event is added successfully; false otherwise.
-   */
-  static boolean scheduleEventInSimulator(Event e, Simulator sim) {
-    if (sim.numOfEvents >= sim.MAX_NUMBER_OF_EVENTS) {
-      return false;
-    } else {
-      // append e as the last element in array sim.events.
-      sim.events[sim.numOfEvents] = e;
-      sim.numOfEvents++;
-      return true;
-    }
-  }
-
-  /**
-   * Run the simulator until there is no more events scheduled.
-   */
-  static void runSimulator(Simulator sim) {
-    while (sim.numOfEvents > 0) {
-      Event e = getNextEarliestEvent(sim);
-      simulateEvent(sim, e);
-    }
-  }
-
-  /**
-   * Find the next event with the earliest timestamp, breaking
-   * ties arbitrarily.  The event is then deleted from the array.
-   * This is an O(n) algorithm.  Better algorithm exists.  To be
-   * improved in later labs using a min heap.
-   *
-   * @return the next event
-   */
-  static Event getNextEarliestEvent(Simulator sim) {
-    int nextEventIndex = -1;
-
-    // Scan linearly through the array to find the event
-    // with earliest (smallest) timestamp.
-    double minTime = Double.MAX_VALUE;
-    for (int i = 0; i < sim.numOfEvents; i++) {
-      if (sim.events[i].time < minTime) {
-        minTime = sim.events[i].time;
-        nextEventIndex = i;
-      }
-    }
-
-    // Get the earliest event
-    Event e = sim.events[nextEventIndex];
-
-    // Replace the earliest event with the last element in
-    // the array.
-    sim.events[nextEventIndex] = sim.events[sim.numOfEvents - 1];
-    sim.numOfEvents--;
-    return e;
-  }
-
-  /**
-   * Simulate the event based on event type.
-   */
-  static void simulateEvent(Simulator sim, Event e) {
-    switch (e.eventType) {
-    case CUSTOMER_ARRIVE:
-      // A customer has arrived.  Increase the ID and assign it to this customer.
-      sim.lastCustomerId++;
-      System.out.printf("%6.3f %d arrives\n", e.time, sim.lastCustomerId);
-
-      // If there is no customer currently being served.  Serve this one.
-      int currentCustomer = sim.lastCustomerId;
-      if (!sim.customerBeingServed) {
-        serveCustomer(sim, e.time, currentCustomer);
-      } else if (!sim.customerWaiting) {
-        // If there is a customer currently being served, and noone is waiting, wait.
-        makeCustomerWait(sim, e.time, currentCustomer);
-      } else {
-        // If there is a customer currently being served, and someone is waiting, the
-        // customer just leaves and go elsewhere (maximum only one waiting customer).
-        customerLeaves(sim, e.time, currentCustomer);
-      }
-      break;
-    case CUSTOMER_DONE:
-      // A customer is done being served.
-      System.out.printf("%6.3f %d done\n", e.time, sim.servedCustomerId);
-      if (sim.customerWaiting) {
-        // Someone is waiting, serve this waiting someone.
-        serveWaitingCustomer(sim, e.time);
-      } else {
-        // Server idle
-        sim.customerBeingServed = false;
-      }
-      break;
-    default:
-      System.err.printf("Unknown event type %d\n", e.eventType);
-    }
-  }
-
-  /**
-   * Serve the current customer with given id at given time in the given simulator.
-   * Precondition: noone must be served at this time.
-   */
-  static void serveCustomer(Simulator sim, double time, int id) {
-    assert sim.customerBeingServed == false;
-    sim.customerBeingServed = true;
-    sim.servedCustomerId = id;
-    System.out.printf("%6.3f %d served\n", time, id);
-    boolean ok = scheduleEventInSimulator(createEvent(time + sim.SERVICE_TIME, CUSTOMER_DONE), sim);
-    if (!ok) {
-      System.err.println("Warning: too many events.  Simulation result will not be correct.");
-    }
-    sim.totalNumOfServedCustomer++;
-    assert sim.customerBeingServed == true;
-  }
-
-  /**
-   * Make the current customer with given id wait starting at given time in the given simulator.
-   * Precondition: someone is being served but noone is waiting
-   * Postcondition: someone is being served, and someone is waiting
-   */
-  static void makeCustomerWait(Simulator sim, double time, int id) {
-    assert sim.customerBeingServed == true;
-    assert sim.customerWaiting == false;
-    sim.waitingCustomerId = id;
-    System.out.printf("%6.3f %d waits\n", time, id);
-    sim.customerWaiting = true;
-    sim.timeStartedWaiting = time;
-    assert sim.customerBeingServed == true;
-    assert sim.customerWaiting == true;
-  }
-
-  /**
-   * Make the current customer with given id wait, starting at given time in the given simulator.
-   * Precondition: someone must be waiting, and noone is being served.
-   * Postcondition: noone is waiting, and someone is being served.
-   */
-  static void serveWaitingCustomer(Simulator sim, double time) {
-    assert sim.customerBeingServed == false;
-    assert sim.customerWaiting == true;
-    sim.customerWaiting = false;
-    serveCustomer(sim, time, sim.waitingCustomerId);
-    sim.totalWaitingTime += (time - sim.timeStartedWaiting);
-    assert sim.customerBeingServed == true;
-    assert sim.customerWaiting == false;
-  }
-
-  /**
-   * Make the current customer with given id leave, at given time in the given simulator.
-   * Precondition: someone must be waiting, and someone is being served.
-   * Postcondition: someone must be waiting, and someone is being served.
-   */
-  static void customerLeaves(Simulator sim, double time, int id) {
-    assert sim.customerBeingServed == true;
-    assert sim.customerWaiting == true;
-    System.out.printf("%6.3f %d leaves\n", time, id);
-    sim.totalNumOfLostCustomer++;
-    assert sim.customerBeingServed == true;
-    assert sim.customerWaiting == true;
-  }
 }
