@@ -3,8 +3,10 @@
   */
 public class Customer {
   private int customerID;
-  //private int
 
+  /**
+   * Constructor class for customer object with customerID
+   */
   public Customer(int _custID) {
     this.customerID = _custID;
   }

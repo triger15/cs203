@@ -15,8 +15,8 @@ public class Simulator {
   public static final int CUSTOMER_DONE = 2;
 
   // The next two members are used to store scheduled events
-  public Event[] events; // Array of events, order of events not guaranteed.
-  public int numOfEvents; // The number of events in the event array.
+  private Event[] events; // Array of events, order of events not guaranteed.
+  private int numOfEvents; // The number of events in the event array.
 
   // The next three members are used to record the states of the simulation
   public boolean customerBeingServed; // is a customer currently being served?
