@@ -29,7 +29,7 @@ class LabOneA {
     // The input file consists of a sequence of arrival timestamp
     // (not necessary in order).
     while (s.hasNextDouble()) {
-      Event e = createEvent(s.nextDouble(), CUSTOMER_ARRIVE);
+      Event e = new Event(s.nextDouble(), CUSTOMER_ARRIVE);
       boolean ok = scheduleEventInSimulator(e, sim);
       if (!ok) {
         System.err.printf("warning: too many events.  Skipping the rest.");
@@ -71,23 +71,6 @@ class LabOneA {
     } finally {
       return s;
     }
-  }
-
-  /**
-   * Create a simulator, initialize the value and return it.
-   *
-   * @return A newly created simulator.
-   */
-  static Simulator createSimulator() {
-    Simulator sim = new Simulator();
-    sim.events = new Event[sim.MAX_NUMBER_OF_EVENTS];
-    sim.numOfEvents = 0;
-    sim.customerWaiting = false;
-    sim.customerBeingServed = false;
-    sim.lastCustomerId = 0;
-    sim.servedCustomerId = -1;
-    sim.waitingCustomerId = -1;
-    return sim;
   }
 
   /**
